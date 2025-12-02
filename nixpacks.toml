@@ -17,7 +17,7 @@ cmds = [
 ]
 
 [start]
-cmd = ". /opt/venv/bin/activate && gunicorn --bind 0.0.0.0:$PORT --timeout 300 --workers 2 --worker-class sync backend_server:app"
+cmd = "/opt/venv/bin/gunicorn --bind 0.0.0.0:$PORT --timeout 300 --workers 2 --worker-class sync backend_server:app"
 
 [variables]
 PYTHONUNBUFFERED = "1"

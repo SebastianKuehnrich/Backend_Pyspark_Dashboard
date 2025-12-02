@@ -1,12 +1,13 @@
 # Nixpacks Config - Backend (Flask + PySpark) für Railway
 
 [phases.setup]
-nixPkgs = ["python311", "python311Packages.pip", "openjdk17", "gcc", "gnumake"]
+nixPkgs = ["python311", "python311Packages.virtualenv", "openjdk17", "gcc", "gnumake"]
 
 [phases.install]
 cmds = [
-  "pip install --upgrade pip setuptools wheel --break-system-packages",
-  "pip install --no-cache-dir -r backend_requirements.txt --break-system-packages"
+  "python3 -m venv /opt/venv",
+  ". /opt/venv/bin/activate && pip install --upgrade pip setuptools wheel",
+  ". /opt/venv/bin/activate && pip install --no-cache-dir -r backend_requirements.txt"
 ]
 
 [phases.build]
@@ -16,7 +17,7 @@ cmds = [
 ]
 
 [start]
-cmd = "gunicorn --bind 0.0.0.0:$PORT --timeout 300 --workers 2 --worker-class sync backend_server:app"
+cmd = ". /opt/venv/bin/activate && gunicorn --bind 0.0.0.0:$PORT --timeout 300 --workers 2 --worker-class sync backend_server:app"
 
 [variables]
 PYTHONUNBUFFERED = "1"

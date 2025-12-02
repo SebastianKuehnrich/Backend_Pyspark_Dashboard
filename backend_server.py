@@ -76,7 +76,7 @@ def upload_csv():
             ['python', temp_script],
             capture_output=True,
             text=True,
-            timeout=300  # 5 Minuten Timeout
+            timeout=1800  # 30 Minuten Timeout
         )
 
         # Lösche temporäres Script

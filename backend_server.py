@@ -31,6 +31,9 @@ CORS(app, resources={
 # Konfiguration
 UPLOAD_FOLDER = 'uploads'
 DATA_FILE = 'data.json'
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+DATA_FILE_PATH = os.path.join(SCRIPT_DIR, DATA_FILE)
+PYSPARK_SCRIPT = os.path.join(SCRIPT_DIR, 'generate_dashboard_data.py')
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 @app.route('/')
@@ -86,7 +89,7 @@ def upload_csv():
             }), 500
 
         # Lade generierte Daten
-        with open(DATA_FILE, 'r', encoding='utf-8') as f:
+        with open(DATA_FILE_PATH, 'r', encoding='utf-8') as f:
             dashboard_data = json.load(f)
 
         return jsonify({
@@ -103,11 +106,14 @@ def upload_csv():
 def get_dashboard_data():
     """Aktuelle Dashboard-Daten abrufen"""
     try:
-        with open(DATA_FILE, 'r', encoding='utf-8') as f:
+        with open(DATA_FILE_PATH, 'r', encoding='utf-8') as f:
             data = json.load(f)
         return jsonify(data)
     except FileNotFoundError:
-        return jsonify({'error': 'Keine Daten vorhanden'}), 404
+        return jsonify({
+            'error': 'Keine Daten vorhanden',
+            'message': 'Bitte laden Sie zuerst eine CSV-Datei hoch'
+        }), 404
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -124,13 +130,19 @@ def create_temp_pyspark_script(csv_path):
     """Erstelle temporäres PySpark-Script mit dynamischem CSV-Pfad"""
 
     # Lade Original-Script
-    with open('generate_dashboard_data.py', 'r', encoding='utf-8') as f:
+    with open(PYSPARK_SCRIPT, 'r', encoding='utf-8') as f:
         original_script = f.read()
 
     # Ersetze DATA_PATH mit neuem Pfad
     modified_script = original_script.replace(
         'DATA_PATH = "C:/Users/sebas/PycharmProjects/BigData/daten/ecommerce_5m.csv"',
         f'DATA_PATH = "{csv_path}"'
+    )
+
+    # Ändere auch den Output-Pfad für data.json
+    modified_script = modified_script.replace(
+        './ergebnisse/',
+        f'{SCRIPT_DIR}/'
     )
 
     # Speichere temporäres Script

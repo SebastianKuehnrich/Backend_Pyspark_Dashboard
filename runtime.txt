@@ -1,0 +1,25 @@
+python-3.11
+{
+  "name": "kunden-dashboard-frontend",
+  "version": "1.0.0",
+  "description": "Kunden-Analyse Dashboard - React Frontend",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "chart.js": "^4.4.0",
+    "react-chartjs-2": "^5.2.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.2.0",
+    "vite": "^5.0.0"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview --host 0.0.0.0 --port ${PORT:-5173}",
+    "start": "vite preview --host 0.0.0.0 --port ${PORT:-5173}"
+  }
+}
+

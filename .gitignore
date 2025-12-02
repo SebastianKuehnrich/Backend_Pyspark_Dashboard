@@ -1,0 +1,59 @@
+# Backend .gitignore - Eigenständiges Repository
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual Environment
+venv/
+env/
+ENV/
+.venv
+*.egg-info/
+.eggs/
+pip-log.txt
+
+# PySpark/Spark
+spark-warehouse/
+metastore_db/
+derby.log
+*.parquet
+
+# Uploads (temporäre CSV-Dateien)
+uploads/
+*.csv
+
+# Generierte Daten
+data.json
+ergebnisse/
+
+# Logs
+*.log
+logs/
+
+# Environment Variables
+.env
+.env.local
+.env.production
+
+# OS
+.DS_Store
+Thumbs.db
+*.swp
+*~
+
+# IDE
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# Git
+.git/
+.gitignore.bak

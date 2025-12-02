@@ -1,0 +1,14 @@
+# Nixpacks Config - Backend Only (Flask + PySpark)
+[phases.setup]
+nixPkgs = ["python311", "openjdk17"]
+
+[phases.install]
+cmds = ["pip install -r backend_requirements.txt"]
+
+[start]
+cmd = "gunicorn --bind 0.0.0.0:$PORT --timeout 300 --workers 2 backend_server:app"
+
+[variables]
+PYTHONUNBUFFERED = "1"
+FLASK_ENV = "production"
+

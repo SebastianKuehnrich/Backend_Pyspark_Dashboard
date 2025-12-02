@@ -17,9 +17,16 @@ FRONTEND_DIST = os.path.join(os.path.dirname(__file__), '..', 'frontend', 'dist'
 
 app = Flask(__name__, static_folder=FRONTEND_DIST, static_url_path='')
 
-# CORS konfigurieren - erlaubt alle Origins (für Railway)
-# In Production sollte hier die Frontend-URL stehen
-CORS(app, resources={r"/api/*": {"origins": "*"}})
+# CORS konfigurieren - Frontend URLs erlauben
+CORS(app, resources={
+    r"/api/*": {
+        "origins": [
+            "https://pysparkkundenanalysedashboard-production.up.railway.app",
+            "http://localhost:5173",
+            "http://localhost:5000"
+        ]
+    }
+})
 
 # Konfiguration
 UPLOAD_FOLDER = 'uploads'

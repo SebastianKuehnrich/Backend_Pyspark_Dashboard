@@ -22,4 +22,4 @@ cmd = "/opt/venv/bin/gunicorn --bind 0.0.0.0:$PORT --timeout 300 --workers 2 --w
 [variables]
 PYTHONUNBUFFERED = "1"
 FLASK_ENV = "production"
-PORT = "8000"
+

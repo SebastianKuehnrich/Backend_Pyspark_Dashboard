@@ -6,6 +6,7 @@
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import os
+import sys  # NEU: für sys.executable
 import json
 import subprocess
 import tempfile
@@ -35,7 +36,11 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_FILE_PATH = os.path.join(SCRIPT_DIR, DATA_FILE)
 PYSPARK_SCRIPT = os.path.join(SCRIPT_DIR, 'generate_dashboard_data.py')
 SIMPLE_ANALYZER = os.path.join(SCRIPT_DIR, 'simple_analyzer.py')
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+# Uploads-Ordner mit absolutem Pfad
+UPLOAD_FOLDER_PATH = os.path.join(SCRIPT_DIR, UPLOAD_FOLDER)
+os.makedirs(UPLOAD_FOLDER_PATH, exist_ok=True)
+
 
 @app.route('/')
 def serve_dashboard():
@@ -47,6 +52,7 @@ def serve_dashboard():
             'error': 'Frontend nicht gefunden',
             'message': 'Bitte führe zuerst "npm run build" im frontend Ordner aus'
         }), 404
+
 
 @app.route('/api/upload-csv', methods=['POST'])
 def upload_csv():
@@ -63,30 +69,57 @@ def upload_csv():
         if not file.filename.endswith('.csv'):
             return jsonify({'error': 'Nur CSV-Dateien erlaubt'}), 400
 
-        # Speichere CSV temporär
+        # Speichere CSV temporär (mit absolutem Pfad)
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         filename = f'ecommerce_{timestamp}.csv'
-        filepath = os.path.join(UPLOAD_FOLDER, filename)
+        filepath = os.path.join(UPLOAD_FOLDER_PATH, filename)
         file.save(filepath)
 
-        # Nutze einfachen Analyzer (Pandas statt PySpark)
-        # Für Production/Railway: weniger RAM, schneller
+        print(f"[INFO] CSV gespeichert: {filepath}")
+        print(f"[INFO] Starte Analyse mit: {sys.executable}")
+        print(f"[INFO] Script: {SIMPLE_ANALYZER}")
+        print(f"[INFO] Output: {DATA_FILE_PATH}")
+
+        # FIX: Nutze sys.executable für korrekten Python-Pfad im venv
+        # FIX: Übergebe Output-Pfad als Argument
         result = subprocess.run(
-            ['python', SIMPLE_ANALYZER, filepath],
+            [sys.executable, SIMPLE_ANALYZER, filepath, DATA_FILE_PATH],
             capture_output=True,
             text=True,
-            timeout=600  # 10 Minuten sollten reichen für Pandas
+            timeout=600,  # 10 Minuten Timeout
+            cwd=SCRIPT_DIR  # FIX: Arbeitsverzeichnis setzen
         )
+
+        print(f"[INFO] Subprocess returncode: {result.returncode}")
+        if result.stdout:
+            print(f"[INFO] Subprocess stdout: {result.stdout}")
+        if result.stderr:
+            print(f"[WARN] Subprocess stderr: {result.stderr}")
 
         if result.returncode != 0:
             return jsonify({
                 'error': 'Fehler bei CSV-Analyse',
-                'details': result.stderr
+                'details': result.stderr,
+                'stdout': result.stdout
+            }), 500
+
+        # Prüfe ob data.json erstellt wurde
+        if not os.path.exists(DATA_FILE_PATH):
+            return jsonify({
+                'error': 'Analyse abgeschlossen, aber data.json nicht gefunden',
+                'expected_path': DATA_FILE_PATH
             }), 500
 
         # Lade generierte Daten
         with open(DATA_FILE_PATH, 'r', encoding='utf-8') as f:
             dashboard_data = json.load(f)
+
+        # Cleanup: CSV löschen um Speicher zu sparen (optional)
+        try:
+            os.remove(filepath)
+            print(f"[INFO] CSV gelöscht: {filepath}")
+        except Exception as e:
+            print(f"[WARN] CSV konnte nicht gelöscht werden: {e}")
 
         return jsonify({
             'success': True,
@@ -95,13 +128,26 @@ def upload_csv():
             'data': dashboard_data
         })
 
+    except subprocess.TimeoutExpired:
+        return jsonify({
+            'error': 'Timeout bei CSV-Analyse',
+            'message': 'Die Analyse hat zu lange gedauert (>10 Minuten)'
+        }), 500
     except Exception as e:
+        print(f"[ERROR] Upload fehlgeschlagen: {str(e)}")
         return jsonify({'error': str(e)}), 500
+
 
 @app.route('/api/data', methods=['GET'])
 def get_dashboard_data():
     """Aktuelle Dashboard-Daten abrufen"""
     try:
+        if not os.path.exists(DATA_FILE_PATH):
+            return jsonify({
+                'error': 'Keine Daten vorhanden',
+                'message': 'Bitte laden Sie zuerst eine CSV-Datei hoch'
+            }), 404
+
         with open(DATA_FILE_PATH, 'r', encoding='utf-8') as f:
             data = json.load(f)
         return jsonify(data)
@@ -113,14 +159,26 @@ def get_dashboard_data():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+
 @app.route('/api/status', methods=['GET'])
 def get_status():
     """Server-Status prüfen"""
     return jsonify({
         'status': 'online',
-        'version': '1.0.0',
-        'timestamp': datetime.now().isoformat()
+        'version': '1.1.0',  # Version erhöht
+        'timestamp': datetime.now().isoformat(),
+        'python_path': sys.executable,
+        'script_dir': SCRIPT_DIR,
+        'data_file_exists': os.path.exists(DATA_FILE_PATH),
+        'analyzer_exists': os.path.exists(SIMPLE_ANALYZER)
     })
+
+
+@app.route('/api/health', methods=['GET'])
+def health_check():
+    """Health Check für Railway"""
+    return jsonify({'status': 'healthy'}), 200
+
 
 def create_temp_pyspark_script(csv_path):
     """Erstelle temporäres PySpark-Script mit dynamischem CSV-Pfad"""
@@ -148,13 +206,20 @@ def create_temp_pyspark_script(csv_path):
 
     return temp_file.name
 
+
 if __name__ == '__main__':
     print("=" * 60)
     print("   KUNDEN-ANALYSE DASHBOARD - SERVER")
     print("=" * 60)
     print()
+    print(f"Python: {sys.executable}")
+    print(f"Script-Dir: {SCRIPT_DIR}")
+    print(f"Data-File: {DATA_FILE_PATH}")
+    print(f"Analyzer: {SIMPLE_ANALYZER}")
+    print()
     print("Backend läuft auf: http://localhost:5000")
     print("Dashboard: http://localhost:5000")
+    print("Status: http://localhost:5000/api/status")
     print()
     print("Drücke STRG+C zum Beenden")
     print("=" * 60)

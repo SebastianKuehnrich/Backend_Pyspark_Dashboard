@@ -67,13 +67,17 @@ def analyze_csv(csv_path, output_path='data.json'):
     print(f"[ANALYZER] Kunden gefunden: {kunden_gesamt}")
 
     # ============================================
-    # UMSATZ-SEGMENTE (Feste Schwellen wie PySpark)
+    # UMSATZ-SEGMENTE (Perzentil-basiert wie Original PySpark)
     # ============================================
     print(f"[ANALYZER] Berechne Umsatz-Segmente...")
 
-    # Feste Schwellen wie im Original PySpark Code
-    vip_df = kunden_umsatz.filter(pl.col('gesamt_umsatz') >= 5000)
-    premium_df = kunden_umsatz.filter((pl.col('gesamt_umsatz') >= 1000) & (pl.col('gesamt_umsatz') < 5000))
+    # VIP-Schwelle = 90. Perzentil (Top 10% der Kunden)
+    vip_threshold = kunden_umsatz['gesamt_umsatz'].quantile(0.9)
+    print(f"[ANALYZER] VIP-Schwelle (90. Perzentil): {vip_threshold:,.2f} EUR")
+
+    # Segmente basierend auf Perzentilen
+    vip_df = kunden_umsatz.filter(pl.col('gesamt_umsatz') >= vip_threshold)
+    premium_df = kunden_umsatz.filter((pl.col('gesamt_umsatz') >= 1000) & (pl.col('gesamt_umsatz') < vip_threshold))
     standard_df = kunden_umsatz.filter((pl.col('gesamt_umsatz') >= 200) & (pl.col('gesamt_umsatz') < 1000))
     gering_df = kunden_umsatz.filter(pl.col('gesamt_umsatz') < 200)
 
@@ -238,8 +242,8 @@ def analyze_csv(csv_path, output_path='data.json'):
     inaktive_vips_count = 0
 
     try:
-        # VIPs = >= 5000 EUR
-        vip_kunden = kunden_umsatz.filter(pl.col('gesamt_umsatz') >= 5000)
+        # VIPs = Top 10% (90. Perzentil) - gleiche Schwelle wie oben
+        vip_kunden = kunden_umsatz.filter(pl.col('gesamt_umsatz') >= vip_threshold)
 
         if len(kunden_last_order) > 0 and len(vip_kunden) > 0:
             # VIPs mit Inaktivitäts-Info joinen

@@ -1,14 +1,25 @@
-# Nixpacks Config - Backend Only (Flask + PySpark)
+# Nixpacks Config - Backend (Flask + PySpark) für Railway
+
 [phases.setup]
 nixPkgs = ["python311", "openjdk17"]
+aptPkgs = ["gcc", "g++"]
 
 [phases.install]
-cmds = ["pip install -r backend_requirements.txt"]
+cmds = [
+  "pip install --upgrade pip",
+  "pip install --no-cache-dir -r backend_requirements.txt"
+]
+
+[phases.build]
+cmds = [
+  "mkdir -p uploads",
+  "echo 'Build completed successfully!'"
+]
 
 [start]
-cmd = "gunicorn --bind 0.0.0.0:$PORT --timeout 300 --workers 2 backend_server:app"
+cmd = "gunicorn --bind 0.0.0.0:$PORT --timeout 300 --workers 2 --worker-class sync backend_server:app"
 
 [variables]
 PYTHONUNBUFFERED = "1"
 FLASK_ENV = "production"
-
+PORT = "8000"

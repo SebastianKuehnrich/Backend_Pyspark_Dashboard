@@ -1,5 +1,166 @@
+# Backend Requirements
+# Flask + PySpark + Gunicorn für Railway
+
 Flask==3.0.0
 Flask-CORS==4.0.0
 pyspark==3.5.0
 pandas==2.1.4
 gunicorn==21.2.0
+
+# Zusätzliche Dependencies für Production
+python-dotenv==1.0.0
+# 🚀 Backend Deployment auf Railway - Schritt für Schritt
+
+## ✅ Voraussetzungen
+- ✅ Backend-Code ist auf GitHub: `https://github.com/SebastianKuehnrich/Backend_Pyspark_Dashboard.git`
+- ✅ Railway Account erstellt
+
+---
+
+## 📦 1. Railway Projekt erstellen
+
+1. Gehe zu: https://railway.app/dashboard
+2. Klicke auf **"New Project"**
+3. Wähle **"Deploy from GitHub repo"**
+4. Wähle: `Backend_Pyspark_Dashboard`
+
+---
+
+## ⚙️ 2. Projekt-Settings konfigurieren
+
+### Root Directory (WICHTIG!)
+Da dies ein Monorepo sein könnte, stelle sicher:
+- **Settings** → **Root Directory**: `.` (oder leer lassen, da Backend im Root liegt)
+
+### Build Command
+Railway erkennt automatisch die `nixpacks.toml` - kein manuelles Build-Command nötig!
+
+---
+
+## 🌍 3. Environment Variables setzen
+
+**Settings** → **Variables** → Folgende hinzufügen:
+
+```env
+PYTHONUNBUFFERED=1
+FLASK_ENV=production
+PORT=8000
+```
+
+Optional (für CORS):
+```env
+FRONTEND_URL=https://pysparkkundenanalysedashboard-production.up.railway.app
+```
+
+---
+
+## 🚀 4. Deploy starten
+
+1. Railway startet automatisch das Deployment
+2. **Build-Prozess** (ca. 2-5 Minuten):
+   - Python 3.11 installieren
+   - OpenJDK 17 installieren (für PySpark)
+   - Dependencies aus `backend_requirements.txt` installieren
+   - Gunicorn Server starten
+
+3. **Logs überprüfen**:
+   - Klicke auf **"View Logs"**
+   - Sollte anzeigen: `✅ Build erfolgreich abgeschlossen!`
+
+---
+
+## 🔗 5. Backend-URL erhalten
+
+Nach erfolgreichem Deployment:
+1. **Settings** → **Networking** → **Public Networking**
+2. Klicke auf **"Generate Domain"**
+3. Notiere die URL, z.B.: `https://backend-production-xyz.up.railway.app`
+
+---
+
+## 📝 6. Backend-URL im Frontend eintragen
+
+### Option A: Über Railway Environment Variable (Empfohlen)
+1. Gehe zum **Frontend-Service** auf Railway
+2. **Settings** → **Variables**
+3. Füge hinzu:
+   ```
+   VITE_API_URL=https://deine-backend-url.up.railway.app
+   ```
+4. **Redeploy** triggern
+
+### Option B: In Code-Datei
+Datei: `frontend/.env.production`
+```env
+VITE_API_URL=https://deine-backend-url.up.railway.app
+```
+Dann zu GitHub pushen und Railway deployed automatisch neu.
+
+---
+
+## 🧪 7. Testen
+
+### Backend-Status prüfen:
+```
+https://deine-backend-url.up.railway.app/api/status
+```
+
+Sollte zurückgeben:
+```json
+{
+  "status": "online",
+  "version": "1.0.0",
+  "timestamp": "2025-12-02T..."
+}
+```
+
+### CSV-Upload testen:
+Öffne das Frontend und lade eine CSV-Datei hoch.
+
+---
+
+## 🐛 Troubleshooting
+
+### Problem: "Build failed" - PySpark Installation
+**Lösung**: Memory erhöhen
+- Settings → Resources → Memory: **4GB** (statt 512MB)
+
+### Problem: "Timeout beim CSV-Upload"
+**Lösung**: Worker-Timeout erhöhen in `nixpacks.toml`:
+```toml
+cmd = "gunicorn --timeout 600 ..."
+```
+
+### Problem: "CORS Error" im Frontend
+**Lösung**: CORS-Origins im Backend anpassen:
+```python
+CORS(app, origins=[
+    'https://pysparkkundenanalysedashboard-production.up.railway.app',
+    'http://localhost:5173'
+])
+```
+
+---
+
+## 📊 Resource Requirements (Railway)
+
+**Empfohlene Einstellungen:**
+- **Memory**: 4GB (wegen PySpark)
+- **CPU**: 2 vCPUs
+- **Disk**: 1GB (für temporäre CSV-Dateien)
+
+---
+
+## ✅ Checkliste
+
+- [ ] Backend auf Railway deployed
+- [ ] Backend-URL notiert
+- [ ] Backend-Status-Endpoint funktioniert (`/api/status`)
+- [ ] Frontend Environment Variable gesetzt (`VITE_API_URL`)
+- [ ] Frontend neu deployed
+- [ ] CSV-Upload getestet
+
+---
+
+**Bei Problemen**: Prüfe die Railway Build-Logs für detaillierte Fehlermeldungen!
+

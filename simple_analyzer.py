@@ -82,16 +82,22 @@ def analyze_csv(csv_path, output_path='data.json'):
 
     report_umsatz = []
     for segment_name, segment_df in [('VIP', vip_df), ('Premium', premium_df), ('Standard', standard_df), ('Gering', gering_df)]:
+        # Alle Segmente anzeigen, auch wenn leer
         if len(segment_df) > 0:
             segment_umsatz = float(segment_df['gesamt_umsatz'].sum())
-            report_umsatz.append({
-                'umsatz_segment': segment_name,
-                'anzahl_kunden': float(len(segment_df)),
-                'segment_umsatz': round(segment_umsatz, 2),
-                'avg_umsatz': round(float(segment_df['gesamt_umsatz'].mean()), 2),
-                'umsatz_anteil_prozent': round((segment_umsatz / total_umsatz) * 100, 2) if total_umsatz > 0 else 0
-            })
-            print(f"[ANALYZER]   {segment_name}: {len(segment_df)} Kunden, {segment_umsatz:,.2f} EUR")
+            avg_umsatz = float(segment_df['gesamt_umsatz'].mean())
+        else:
+            segment_umsatz = 0.0
+            avg_umsatz = 0.0
+
+        report_umsatz.append({
+            'umsatz_segment': segment_name,
+            'anzahl_kunden': float(len(segment_df)),
+            'segment_umsatz': round(segment_umsatz, 2),
+            'avg_umsatz': round(avg_umsatz, 2),
+            'umsatz_anteil_prozent': round((segment_umsatz / total_umsatz) * 100, 2) if total_umsatz > 0 else 0
+        })
+        print(f"[ANALYZER]   {segment_name}: {len(segment_df)} Kunden, {segment_umsatz:,.2f} EUR")
 
     # Nach Umsatz sortieren (absteigend)
     report_umsatz.sort(key=lambda x: x['segment_umsatz'], reverse=True)
@@ -239,10 +245,10 @@ def analyze_csv(csv_path, output_path='data.json'):
             # VIPs mit Inaktivitäts-Info joinen
             vip_mit_datum = vip_kunden.join(kunden_last_order, on='customer_id', how='left')
 
-            # Inaktive VIPs (> 30 Tage)
+            # Inaktive VIPs (> 30 Tage) - TOP 30
             inaktive_vips = vip_mit_datum.filter(
                 pl.col('tage_inaktiv') > 30
-            ).sort('gesamt_umsatz', descending=True).head(10)
+            ).sort('gesamt_umsatz', descending=True).head(30)
 
             inaktive_vips_count = len(vip_mit_datum.filter(pl.col('tage_inaktiv') > 30))
             verlorener_umsatz_total = float(vip_mit_datum.filter(pl.col('tage_inaktiv') > 30)['gesamt_umsatz'].sum())

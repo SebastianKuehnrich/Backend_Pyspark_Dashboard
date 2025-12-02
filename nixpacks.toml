@@ -1,13 +1,12 @@
 # Nixpacks Config - Backend (Flask + PySpark) für Railway
 
 [phases.setup]
-nixPkgs = ["python311", "openjdk17"]
-aptPkgs = ["gcc", "g++"]
+nixPkgs = ["python311", "python311Packages.pip", "openjdk17", "gcc", "gnumake"]
 
 [phases.install]
 cmds = [
-  "python3 -m pip install --upgrade pip",
-  "python3 -m pip install --no-cache-dir -r backend_requirements.txt"
+  "pip install --upgrade pip setuptools wheel",
+  "pip install --no-cache-dir -r backend_requirements.txt"
 ]
 
 [phases.build]

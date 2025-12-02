@@ -3,13 +3,3 @@
 
 # Virtual Environment aktivieren und Gunicorn starten
 /opt/venv/bin/gunicorn --bind 0.0.0.0:$PORT --timeout 300 --workers 2 --worker-class sync backend_server:app
-# Railway Config - Backend (Flask + PySpark)
-
-[build]
-builder = "NIXPACKS"
-
-[deploy]
-startCommand = "/opt/venv/bin/gunicorn --bind 0.0.0.0:$PORT --timeout 300 --workers 2 --worker-class sync backend_server:app"
-restartPolicyType = "ON_FAILURE"
-restartPolicyMaxRetries = 10
-

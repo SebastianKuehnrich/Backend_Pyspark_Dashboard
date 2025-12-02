@@ -1,10 +1,10 @@
 # Backend Requirements
-# Flask + PySpark + Gunicorn für Railway
+# Flask + Polars + Gunicorn für Railway
+# Polars: Schnell, wenig RAM, kein NumPy-Konflikt
 
 Flask==3.0.0
 Flask-CORS==4.0.0
-pyspark==3.5.0
-pandas==2.1.4
+polars==1.16.0
 gunicorn==21.2.0
 
 # Zusätzliche Dependencies für Production

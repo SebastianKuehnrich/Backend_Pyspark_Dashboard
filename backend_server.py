@@ -34,6 +34,7 @@ DATA_FILE = 'data.json'
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_FILE_PATH = os.path.join(SCRIPT_DIR, DATA_FILE)
 PYSPARK_SCRIPT = os.path.join(SCRIPT_DIR, 'generate_dashboard_data.py')
+SIMPLE_ANALYZER = os.path.join(SCRIPT_DIR, 'simple_analyzer.py')
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 @app.route('/')
@@ -49,7 +50,7 @@ def serve_dashboard():
 
 @app.route('/api/upload-csv', methods=['POST'])
 def upload_csv():
-    """CSV hochladen und PySpark-Analyse starten"""
+    """CSV hochladen und Analyse starten"""
     try:
         if 'file' not in request.files:
             return jsonify({'error': 'Keine Datei hochgeladen'}), 400
@@ -68,23 +69,18 @@ def upload_csv():
         filepath = os.path.join(UPLOAD_FOLDER, filename)
         file.save(filepath)
 
-        # Erstelle temporäres PySpark-Script mit neuem Pfad
-        temp_script = create_temp_pyspark_script(filepath)
-
-        # Führe PySpark-Analyse aus
+        # Nutze einfachen Analyzer (Pandas statt PySpark)
+        # Für Production/Railway: weniger RAM, schneller
         result = subprocess.run(
-            ['python', temp_script],
+            ['python', SIMPLE_ANALYZER, filepath],
             capture_output=True,
             text=True,
-            timeout=1800  # 30 Minuten Timeout
+            timeout=600  # 10 Minuten sollten reichen für Pandas
         )
-
-        # Lösche temporäres Script
-        os.remove(temp_script)
 
         if result.returncode != 0:
             return jsonify({
-                'error': 'Fehler bei PySpark-Analyse',
+                'error': 'Fehler bei CSV-Analyse',
                 'details': result.stderr
             }), 500
 
